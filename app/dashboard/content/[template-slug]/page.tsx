@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { chatSession } from '@/utils/AIModel';
+import { AIOutput } from '@/utils/schema';
 
 interface PROPS{
   params:{
@@ -21,6 +22,8 @@ function CreateNewContent(props: PROPS) {
   const [loading, setLoading] = useState(false);
   const [aiOutput, setAiOutput] = useState<string>('')
 
+  const {user}=useUser()
+
   const GenerateAIContent = async(formData:any) => {
     setLoading(true);
 
@@ -31,8 +34,19 @@ function CreateNewContent(props: PROPS) {
     const result = await chatSession.sendMessage(FinalAIPrompt);
 
     console.log(result.response.text());
+    await SaveInDb(formData,selectedTemplate?.slug,aiOutput);
     setAiOutput(result?.response.text());
     setLoading(false)
+  }
+
+  const SaveInDb=async(formData:any,slug:any,aiResp:string)=>{
+    const result = await db.insert(AIOutput).values({
+      formData:formData,
+      templateSlug:slug,
+      aiResponse:aiOutput,
+      createdBy:
+
+    }) 
   }
 
   return (
