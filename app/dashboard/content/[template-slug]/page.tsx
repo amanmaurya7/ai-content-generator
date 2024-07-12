@@ -9,6 +9,9 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { chatSession } from '@/utils/AIModel';
 import { AIOutput } from '@/utils/schema';
+import { db } from '@/utils/db';
+import { useUser } from '@clerk/clerk-react'
+import moment from 'moment';
 
 interface PROPS{
   params:{
@@ -22,7 +25,7 @@ function CreateNewContent(props: PROPS) {
   const [loading, setLoading] = useState(false);
   const [aiOutput, setAiOutput] = useState<string>('')
 
-  const {user}=useUser()
+  const {user}=useUser();
 
   const GenerateAIContent = async(formData:any) => {
     setLoading(true);
@@ -33,20 +36,22 @@ function CreateNewContent(props: PROPS) {
   
     const result = await chatSession.sendMessage(FinalAIPrompt);
 
-    console.log(result.response.text());
-    await SaveInDb(formData,selectedTemplate?.slug,aiOutput);
     setAiOutput(result?.response.text());
+    await SaveInDb(JSON.stringify(formData),selectedTemplate?.slug,result?.response.text())
     setLoading(false)
   }
 
   const SaveInDb=async(formData:any,slug:any,aiResp:string)=>{
-    const result = await db.insert(AIOutput).values({
-      formData:formData,
-      templateSlug:slug,
-      aiResponse:aiOutput,
-      createdBy:
-
-    }) 
+    if (user?.primaryEmailAddress?.emailAddress) {
+      const result = await db.insert(AIOutput).values({
+        formData: formData,
+        templateSlug: slug,
+        aiResponse: aiResp,
+        createdBy: user.primaryEmailAddress.emailAddress,
+        createdAt: moment().format('DD/MM/YYYY'),
+      });
+      console.log(result);
+    }
   }
 
   return (
